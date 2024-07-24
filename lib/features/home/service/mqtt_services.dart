@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'package:flutter/material.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 import 'package:uuid/uuid.dart';
@@ -32,11 +33,11 @@ class MQTTService {
   }
 
   void onConnected() {
-    print('Connected');
+    debugPrint('Connected');
   }
 
   void onDisconnected() {
-    print('Disconnected');
+    debugPrint('Disconnected');
   }
 
   void disconnect() {
