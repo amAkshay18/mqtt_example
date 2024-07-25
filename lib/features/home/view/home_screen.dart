@@ -129,6 +129,7 @@ class HomeScreenState extends State<HomeScreen> {
                           content: Text(AppStrings.messagePublished),
                         ),
                       );
+                      context.read<HomeViewModel>().clearTextFields();
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(

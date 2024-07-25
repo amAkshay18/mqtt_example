@@ -22,4 +22,9 @@ class HomeViewModel extends ChangeNotifier {
     selectedQoS = qos;
     notifyListeners();
   }
+
+  void clearTextFields() {
+    topicController.clear();
+    messageController.clear();
+  }
 }
