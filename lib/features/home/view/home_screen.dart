@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:onwords/features/home/view_model/home_view_model.dart';
 import 'package:onwords/utils/app_strings.dart';
 import 'package:provider/provider.dart';
+import 'package:internet_connection_checker/internet_connection_checker.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,11 +14,102 @@ class HomeScreen extends StatefulWidget {
 }
 
 class HomeScreenState extends State<HomeScreen> {
+  bool isConnectedToInternet = false;
+
+  late final StreamSubscription<InternetConnectionStatus> listener;
+
+  @override
+  void initState() {
+    super.initState();
+    listener = InternetConnectionChecker().onStatusChange.listen(
+      (InternetConnectionStatus status) {
+        setState(() {
+          isConnectedToInternet =
+              (status == InternetConnectionStatus.connected);
+        });
+        switch (status) {
+          case InternetConnectionStatus.connected:
+            print('Data connection is available.');
+            break;
+          case InternetConnectionStatus.disconnected:
+            print('You are disconnected from the internet.');
+            break;
+        }
+      },
+    );
+  }
+
   @override
   void dispose() {
+    listener.cancel();
     context.read<HomeViewModel>().topicController.dispose();
     context.read<HomeViewModel>().messageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkAndConnect() async {
+    if (context.read<HomeViewModel>().topicController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter data to continue')));
+    }
+    if (isConnectedToInternet) {
+      await context.read<HomeViewModel>().connect().whenComplete(
+        () {
+          log('Connected to MQTT server');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Connected to MQTT server'),
+            ),
+          );
+        },
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No internet connection'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _checkAndPublish() async {
+    if (context.read<HomeViewModel>().topicController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter data to continue')));
+    }
+    if (isConnectedToInternet) {
+      final topic = context.read<HomeViewModel>().topicController.text;
+      final message = context.read<HomeViewModel>().messageController.text;
+      final selectedQualityOfService =
+          int.parse(context.read<HomeViewModel>().selectedQoS);
+
+      if (topic.isNotEmpty && message.isNotEmpty) {
+        context.read<HomeViewModel>().publish(
+              message: message,
+              qosLevel: selectedQualityOfService,
+              topic: topic,
+            );
+        log('Message published');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(AppStrings.messagePublished),
+          ),
+        );
+        context.read<HomeViewModel>().clearTextFields();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enter both topic and message'),
+          ),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No internet connection'),
+        ),
+      );
+    }
   }
 
   @override
@@ -39,40 +132,41 @@ class HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 20),
               Selector<HomeViewModel, String>(
-                  selector: (p0, p1) => p1.selectedQoS,
-                  builder: (context, selectedQos, _) {
-                    return SizedBox(
-                      width: double.infinity,
-                      child: DropdownButton<String>(
-                        value: selectedQos,
-                        isExpanded: true,
-                        underline: Container(
-                          height: 2,
-                          color: Colors.blueAccent,
-                        ),
-                        items: <String>['0', '1', '2'].map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(
-                              'Quality of Service(QOS)$value',
-                              textAlign: TextAlign.center,
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          context
-                              .read<HomeViewModel>()
-                              .updateSelectedQOS(newValue ?? "0");
-                        },
-                        style: const TextStyle(
-                          color: Colors.blue,
-                          fontSize: 16,
-                        ),
-                        dropdownColor: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
+                selector: (p0, p1) => p1.selectedQoS,
+                builder: (context, selectedQos, _) {
+                  return SizedBox(
+                    width: double.infinity,
+                    child: DropdownButton<String>(
+                      value: selectedQos,
+                      isExpanded: true,
+                      underline: Container(
+                        height: 2,
+                        color: Colors.blueAccent,
                       ),
-                    );
-                  }),
+                      items: <String>['0', '1', '2'].map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(
+                            'Quality of Service(QOS) $value',
+                            textAlign: TextAlign.center,
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        context
+                            .read<HomeViewModel>()
+                            .updateSelectedQOS(newValue ?? "0");
+                      },
+                      style: const TextStyle(
+                        color: Colors.blue,
+                        fontSize: 16,
+                      ),
+                      dropdownColor: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  );
+                },
+              ),
               const SizedBox(height: 20),
               TextFormField(
                 controller: context.read<HomeViewModel>().messageController,
@@ -84,18 +178,7 @@ class HomeScreenState extends State<HomeScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () async {
-                    await context.read<HomeViewModel>().connect().whenComplete(
-                      () {
-                        log('Connected to MQTT server');
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Connected to MQTT server'),
-                          ),
-                        );
-                      },
-                    );
-                  },
+                  onPressed: _checkAndConnect,
                   style: ElevatedButton.styleFrom(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -108,36 +191,7 @@ class HomeScreenState extends State<HomeScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    final topic =
-                        context.read<HomeViewModel>().topicController.text;
-
-                    final message =
-                        context.read<HomeViewModel>().messageController.text;
-
-                    final selectedQualityOfService =
-                        int.parse(context.read<HomeViewModel>().selectedQoS);
-                    if (topic.isNotEmpty && message.isNotEmpty) {
-                      context.read<HomeViewModel>().publish(
-                            message: message,
-                            qosLevel: selectedQualityOfService,
-                            topic: topic,
-                          );
-                      log('Message published');
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(AppStrings.messagePublished),
-                        ),
-                      );
-                      context.read<HomeViewModel>().clearTextFields();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please enter both topic and message'),
-                        ),
-                      );
-                    }
-                  },
+                  onPressed: _checkAndPublish,
                   style: ElevatedButton.styleFrom(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
