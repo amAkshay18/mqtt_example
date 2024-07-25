@@ -111,13 +111,10 @@ class HomeScreenState extends State<HomeScreen> {
                   onPressed: () {
                     final topic =
                         context.read<HomeViewModel>().topicController.text;
-                    debugPrint(
-                        '----------------------------------------$topic');
 
                     final message =
                         context.read<HomeViewModel>().messageController.text;
-                    debugPrint(
-                        '----------------------------------------$message');
+
                     final selectedQualityOfService =
                         int.parse(context.read<HomeViewModel>().selectedQoS);
                     if (topic.isNotEmpty && message.isNotEmpty) {
@@ -129,7 +126,7 @@ class HomeScreenState extends State<HomeScreen> {
                       log('Message published');
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Message published'),
+                          content: Text(AppStrings.messagePublished),
                         ),
                       );
                     } else {
@@ -145,7 +142,6 @@ class HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  //-----------------------------------------------------------------------------------
                   child: const Text(AppStrings.publish),
                 ),
               ),

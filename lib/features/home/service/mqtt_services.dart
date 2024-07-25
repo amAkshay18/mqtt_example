@@ -45,7 +45,7 @@ class MQTTService {
   }
 
   void publish(String topic, String message, int qosLevel) async {
-    await connect(); // Connect to the MQTT server
+    await connect();
     log('Publishing message to topic $topic with QoS $qosLevel');
     final builder = MqttClientPayloadBuilder();
     builder.addString(message);
