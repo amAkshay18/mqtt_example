@@ -5,7 +5,8 @@ import 'package:mqtt_client/mqtt_server_client.dart';
 import 'package:uuid/uuid.dart';
 
 class MQTTService {
-  final String serverUri = 'broker.mqtt.cool';
+  // final String serverUri = 'broker.mqtt.cool';
+  final String serverUri = '49.206.113.106';
   final String clientId = const Uuid().v4();
 
   MqttServerClient? client;
@@ -13,7 +14,8 @@ class MQTTService {
   Future<void> connect() async {
     client = MqttServerClient(serverUri, clientId);
     client!.logging(on: true);
-    client!.port = 1883;
+    client!.port = 18816;
+    // client!.port = 1883;
     client!.onDisconnected = onDisconnected;
     client!.onConnected = onConnected;
 

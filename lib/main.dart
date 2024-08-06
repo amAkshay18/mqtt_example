@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:onwords/features/home/service/mqtt_services.dart';
-import 'package:onwords/features/home/view/home_screen.dart';
 import 'package:onwords/features/home/view_model/home_view_model.dart';
+import 'package:onwords/features/light/view_model/light.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -22,7 +22,8 @@ class MyApp extends StatelessWidget {
           primarySwatch: Colors.blue,
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
-        home: const HomeScreen(),
+        home: const LightController(),
+        // home: const HomeScreen(),
       ),
     );
   }

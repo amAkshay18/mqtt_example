@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:onwords/features/home/view_model/home_view_model.dart';
+import 'package:onwords/features/light/view/light.dart';
 import 'package:onwords/utils/app_strings.dart';
 import 'package:provider/provider.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
@@ -29,9 +30,11 @@ class HomeScreenState extends State<HomeScreen> {
         });
         switch (status) {
           case InternetConnectionStatus.connected:
+            // ignore: avoid_print
             print('Data connection is available.');
             break;
           case InternetConnectionStatus.disconnected:
+            // ignore: avoid_print
             print('You are disconnected from the internet.');
             break;
         }
@@ -51,24 +54,25 @@ class HomeScreenState extends State<HomeScreen> {
     if (context.read<HomeViewModel>().topicController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please enter data to continue')));
-    }
-    if (isConnectedToInternet) {
-      await context.read<HomeViewModel>().connect().whenComplete(
-        () {
-          log('Connected to MQTT server');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Connected to MQTT server'),
-            ),
-          );
-        },
-      );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No internet connection'),
-        ),
-      );
+      if (isConnectedToInternet) {
+        await context.read<HomeViewModel>().connect().whenComplete(
+          () {
+            log('Connected to MQTT server');
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Connected to MQTT server'),
+              ),
+            );
+          },
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No internet connection'),
+          ),
+        );
+      }
     }
   }
 
@@ -76,39 +80,40 @@ class HomeScreenState extends State<HomeScreen> {
     if (context.read<HomeViewModel>().topicController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please enter data to continue')));
-    }
-    if (isConnectedToInternet) {
-      final topic = context.read<HomeViewModel>().topicController.text;
-      final message = context.read<HomeViewModel>().messageController.text;
-      final selectedQualityOfService =
-          int.parse(context.read<HomeViewModel>().selectedQoS);
+    } else {
+      if (isConnectedToInternet) {
+        final topic = context.read<HomeViewModel>().topicController.text;
+        final message = context.read<HomeViewModel>().messageController.text;
+        final selectedQualityOfService =
+            int.parse(context.read<HomeViewModel>().selectedQoS);
 
-      if (topic.isNotEmpty && message.isNotEmpty) {
-        context.read<HomeViewModel>().publish(
-              message: message,
-              qosLevel: selectedQualityOfService,
-              topic: topic,
-            );
-        log('Message published');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(AppStrings.messagePublished),
-          ),
-        );
-        context.read<HomeViewModel>().clearTextFields();
+        if (topic.isNotEmpty && message.isNotEmpty) {
+          context.read<HomeViewModel>().publish(
+                message: message,
+                qosLevel: selectedQualityOfService,
+                topic: topic,
+              );
+          log('Message published');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(AppStrings.messagePublished),
+            ),
+          );
+          context.read<HomeViewModel>().clearTextFields();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please enter both topic and message'),
+            ),
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Please enter both topic and message'),
+            content: Text('No internet connection'),
           ),
         );
       }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No internet connection'),
-        ),
-      );
     }
   }
 
@@ -117,6 +122,17 @@ class HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppStrings.title),
+        actions: [
+          IconButton(
+              onPressed: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LightPage(),
+                    ));
+              },
+              icon: const Icon(Icons.arrow_right))
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
